@@ -193,7 +193,7 @@ export default function InvestmentsPage() {
                           </div>
                           <div>
                             <p className="text-sm font-medium">Risk Level</p>
-                            <Badge variant={opportunity.riskVariant}>{opportunity.risk}</Badge>
+                            <Badge variant={opportunity.riskVariant as "default" | "secondary" | "destructive" | "outline"}>{opportunity.risk}</Badge>
                           </div>
                         </div>
                       </CardContent>
@@ -303,6 +303,7 @@ const investments = [
   },
 ]
 
+// Modified to ensure type safety
 const opportunities = [
   {
     id: "1",
@@ -310,7 +311,7 @@ const opportunities = [
     description: "High-growth technology companies portfolio",
     expectedReturn: "12-15",
     risk: "Moderate",
-    riskVariant: "outline",
+    riskVariant: "outline" as const,
   },
   {
     id: "2",
@@ -318,7 +319,7 @@ const opportunities = [
     description: "Renewable energy investment portfolio",
     expectedReturn: "8-12",
     risk: "Low",
-    riskVariant: "secondary",
+    riskVariant: "secondary" as const,
   },
   {
     id: "3",
@@ -326,7 +327,7 @@ const opportunities = [
     description: "Diversified cryptocurrency portfolio",
     expectedReturn: "20-30",
     risk: "High",
-    riskVariant: "destructive",
+    riskVariant: "destructive" as const,
   },
 ]
 
@@ -334,4 +335,3 @@ const opportunities = [
 function cn(...classes: string[]) {
   return classes.filter(Boolean).join(" ")
 }
-
