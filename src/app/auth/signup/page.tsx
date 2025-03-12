@@ -11,10 +11,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast"
 import api from "@/utils/api"
 
-export default function LoginPage() {
+export default function SignupPage() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -31,55 +32,32 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // Call API to initiate login
-      const response = await api.post("/auth/login", {
+      // Validate passwords match
+      if (formData.password !== formData.confirmPassword) {
+        throw new Error("Passwords do not match")
+      }
+
+      // Call API to signup
+      const response = await api.post("/auth/signup", {
         email: formData.email,
         password: formData.password,
       })
 
       toast({
-        title: "OTP sent",
+        title: "Signup successful",
         description: "Please check your email for the verification code.",
       })
 
-      // Redirect to verify page with userId
-      router.push(`/auth/verify?email=${encodeURIComponent(formData.email)}&userId=${response.data.userId}&action=login`)
+      // Redirect to verify page
+      router.push(`/auth/verify?email=${encodeURIComponent(formData.email)}&action=signup`)
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Login failed",
-        description: error.response?.data?.message || "Invalid email or password.",
+        title: "Signup failed",
+        description: error.response?.data?.message || "Please check your information and try again.",
       })
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const handleForgotPassword = async () => {
-    if (!formData.email) {
-      toast({
-        variant: "destructive",
-        title: "Email required",
-        description: "Please enter your email address to reset your password.",
-      })
-      return
-    }
-
-    try {
-      await api.post("/auth/forgot-password", {
-        email: formData.email,
-      })
-
-      toast({
-        title: "Password reset initiated",
-        description: "Please check your email for the password reset instructions.",
-      })
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Password reset failed",
-        description: error.response?.data?.message || "Please check your email and try again.",
-      })
     }
   }
 
@@ -93,8 +71,8 @@ export default function LoginPage() {
               <span>VaultX</span>
             </Link>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
-          <CardDescription className="text-center">Enter your credentials to access your account</CardDescription>
+          <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
+          <CardDescription className="text-center">Enter your email and password to create your account</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -111,17 +89,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Button
-                  type="button"
-                  variant="link"
-                  className="p-0 h-auto text-sm text-primary"
-                  onClick={handleForgotPassword}
-                >
-                  Forgot password?
-                </Button>
-              </div>
+              <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -148,15 +116,40 @@ export default function LoginPage() {
                 </Button>
               </div>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              By creating an account, you agree to our{" "}
+              <Link href="#" className="text-primary hover:underline">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="#" className="text-primary hover:underline">
+                Privacy Policy
+              </Link>
+              .
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Creating account..." : "Create account"}
             </Button>
             <div className="text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link href="/auth/signup" className="text-primary hover:underline">
-                Sign up
+              Already have an account?{" "}
+              <Link href="/auth/login" className="text-primary hover:underline">
+                Sign in
               </Link>
             </div>
           </CardFooter>

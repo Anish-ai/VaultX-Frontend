@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -10,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
+import api from "@/utils/api"
 
 export default function VerifyPage() {
   const [code, setCode] = useState(["", "", "", "", "", ""])
@@ -23,22 +22,29 @@ export default function VerifyPage() {
     inputRefs.current = inputRefs.current.slice(0, code.length)
   }, [code.length])
 
-  const handleChange = (index: number, value: string) => {
-    // Only allow numbers
-    if (!/^\d*$/.test(value)) return
+  // Get email and action from URL
+  const getQueryParams = () => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search)
+      return {
+        email: params.get("email") || "",
+        action: params.get("action") || "signup" // Default to signup
+      }
+    }
+    return { email: "", action: "signup" }
+  }
 
+  const handleChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return
     const newCode = [...code]
     newCode[index] = value
     setCode(newCode)
-
-    // Auto-focus next input if value is entered
     if (value && index < code.length - 1) {
       inputRefs.current[index + 1]?.focus()
     }
   }
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Move to previous input on backspace if current input is empty
     if (e.key === "Backspace" && !code[index] && index > 0) {
       inputRefs.current[index - 1]?.focus()
     }
@@ -47,13 +53,9 @@ export default function VerifyPage() {
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault()
     const pastedData = e.clipboardData.getData("text/plain").trim()
-
-    // Check if pasted content is a 6-digit number
     if (/^\d{6}$/.test(pastedData)) {
       const newCode = pastedData.split("")
       setCode(newCode)
-
-      // Focus the last input
       inputRefs.current[5]?.focus()
     }
   }
@@ -64,26 +66,68 @@ export default function VerifyPage() {
 
     try {
       const verificationCode = code.join("")
-
-      // Validate code length
       if (verificationCode.length !== 6) {
         throw new Error("Please enter a valid 6-digit code")
       }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const { email, action } = getQueryParams()
+      if (!email) {
+        throw new Error("Email not found")
+      }
 
-      toast({
-        title: "Verification successful",
-        description: "Redirecting to your dashboard...",
-      })
-
-      router.push("/dashboard")
+      // Different API endpoints based on action (signup or login)
+      let response
+      if (action === "signup") {
+        response = await api.post("/auth/verify", { 
+          email, 
+          otp: verificationCode 
+        })
+        
+        // Store token
+        if (response.data.token) {
+          localStorage.setItem("token", response.data.token)
+        }
+        
+        toast({
+          title: "Account verified",
+          description: "Please complete your profile.",
+        })
+        
+        // Redirect to profile completion
+        router.push("/auth/register")
+      } else {
+        // Login verification
+        const userIdString = new URLSearchParams(window.location.search).get("userId")
+        const userId = userIdString ? parseInt(userIdString) : null
+        console.log(userId)
+        if (!userId) {
+          throw new Error("User ID not found")
+        }
+        
+        response = await api.post("/auth/verify-login", { 
+          userId, 
+          otp: verificationCode 
+        })
+        
+        // Store token and user data
+        if (response.data.token) {
+          localStorage.setItem("token", response.data.token)
+          localStorage.setItem("user", JSON.stringify(response.data.user))
+        }
+        
+        toast({
+          title: "Login successful",
+          description: "Redirecting to your dashboard...",
+        })
+        
+        // Redirect to dashboard
+        router.push("/dashboard")
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Verification failed",
-        description: error.message || "Please check your code and try again.",
+        description: error.response?.data?.message || "Please check your code and try again.",
       })
     } finally {
       setIsLoading(false)
@@ -91,11 +135,32 @@ export default function VerifyPage() {
   }
 
   const handleResendCode = async () => {
-    toast({
-      title: "Code resent",
-      description: "A new verification code has been sent to your email.",
-    })
+    const { email, action } = getQueryParams()
+    if (!email) return
+
+    try {
+      // Different endpoints for resending OTP based on action
+      if (action === "signup") {
+        await api.post("/auth/resend-otp", { email })
+      } else {
+        await api.post("/auth/resend-login-otp", { email })
+      }
+      
+      toast({
+        title: "Code resent",
+        description: "A new verification code has been sent to your email.",
+      })
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to resend code",
+        description: error.response?.data?.message || "Please try again later.",
+      })
+    }
   }
+
+  const { action } = getQueryParams()
+  const verifyingAction = action === "signup" ? "account" : "login"
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/50 px-4 py-12">
@@ -107,9 +172,9 @@ export default function VerifyPage() {
               <span>VaultX</span>
             </Link>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">Two-Factor Authentication</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Verify Your {verifyingAction}</CardTitle>
           <CardDescription className="text-center">
-            Enter the 6-digit code sent to your email or authentication app
+            Enter the 6-digit code sent to your email
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -145,8 +210,8 @@ export default function VerifyPage() {
               {isLoading ? "Verifying..." : "Verify"}
             </Button>
             <div className="text-center text-sm">
-              <Link href="/auth/login" className="text-primary hover:underline">
-                Back to login
+              <Link href={action === "signup" ? "/auth/signup" : "/auth/login"} className="text-primary hover:underline">
+                Back to {action === "signup" ? "signup" : "login"}
               </Link>
             </div>
           </CardFooter>
@@ -155,4 +220,3 @@ export default function VerifyPage() {
     </div>
   )
 }
-
