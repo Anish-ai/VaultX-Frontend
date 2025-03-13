@@ -99,7 +99,6 @@ export default function VerifyPage() {
         // Login verification
         const userIdString = new URLSearchParams(window.location.search).get("userId")
         const userId = userIdString ? parseInt(userIdString) : null
-        console.log(userId)
         if (!userId) {
           throw new Error("User ID not found")
         }
