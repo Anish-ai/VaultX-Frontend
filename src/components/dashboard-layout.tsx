@@ -1,10 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation" // Import useRouter
 import {
   Shield,
   Home,
@@ -39,6 +38,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
+  const router = useRouter() // Initialize useRouter
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [unreadNotifications, setUnreadNotifications] = useState(3)
@@ -52,13 +52,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return () => clearTimeout(timer)
   }, [])
 
+  // Handle logout
+  const handleLogout = () => {
+    // Clear the token from local storage (or cookies)
+    localStorage.removeItem("token") // Replace with your token storage method
+    // Redirect to the home page
+    router.push("/")
+  }
+
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Accounts", href: "/dashboard/accounts", icon: CreditCard },
     { name: "Transactions", href: "/dashboard/transactions", icon: BarChart3 },
     { name: "Investments", href: "/dashboard/investments", icon: PiggyBank },
     { name: "Notifications", href: "/dashboard/notifications", icon: Bell, badge: unreadNotifications },
-    { name: "Settings", href: "/dashboard/settings", icon: Settings },
+    { name: "Profile", href: "/dashboard/profile", icon: User },
   ]
 
   if (isLoading) {
@@ -177,16 +185,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/profile" className="w-full">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out
                 </DropdownMenuItem>
@@ -219,4 +225,3 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     </div>
   )
 }
-

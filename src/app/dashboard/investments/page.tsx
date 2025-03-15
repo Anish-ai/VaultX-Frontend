@@ -1,20 +1,129 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { ArrowUpRight, ArrowDownRight, TrendingUp, PiggyBank, Briefcase, DollarSign } from "lucide-react"
-import DashboardLayout from "@/components/dashboard-layout"
+"use client"; // Mark this component as a Client Component
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { ArrowUpRight, ArrowDownRight, TrendingUp, PiggyBank, Briefcase, DollarSign } from "lucide-react";
+import DashboardLayout from "@/components/dashboard-layout";
+import api from "@/utils/api";
+
+// Define TypeScript interfaces
+interface Investment {
+  id: number;
+  userId: number;
+  amount: number;
+  type: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AssetAllocation {
+  name: string;
+  value: string;
+  percentage: number;
+  color: string;
+  progressColor: string;
+}
 
 export default function InvestmentsPage() {
+  const [investments, setInvestments] = useState<Investment[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [assetAllocation, setAssetAllocation] = useState<AssetAllocation[]>([]);
+
+  useEffect(() => {
+    const fetchInvestments = async () => {
+      try {
+        // Fetch investments
+        const response = await api.get<{ data: Investment[] }>("/investments");
+        console.log("API Response:", response.data); // Log the response for debugging
+
+        // Ensure the response data is an array
+        if (Array.isArray(response.data.data)) {
+          setInvestments(response.data.data);
+
+          // Calculate asset allocation
+          const allocation = calculateAssetAllocation(response.data.data);
+          setAssetAllocation(allocation);
+        } else {
+          console.error("Invalid response format: Expected an array");
+          setInvestments([]); // Set investments to an empty array
+        }
+      } catch (error) {
+        console.error("Error fetching investments:", error);
+        setInvestments([]); // Set investments to an empty array in case of error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInvestments();
+  }, []);
+
+  // Calculate asset allocation based on investments
+  const calculateAssetAllocation = (investments: Investment[]): AssetAllocation[] => {
+    const totalValue = investments.reduce((sum, investment) => sum + investment.amount, 0);
+
+    const allocation = [
+      {
+        name: "Stocks",
+        value: investments
+          .filter((inv) => inv.type === "STOCKS")
+          .reduce((sum, inv) => sum + inv.amount, 0)
+          .toFixed(2),
+        percentage: Math.round(
+          (investments.filter((inv) => inv.type === "STOCKS").reduce((sum, inv) => sum + inv.amount, 0) / totalValue) * 100
+        ),
+        color: "bg-blue-500",
+        progressColor: "bg-blue-500",
+      },
+      {
+        name: "Bonds",
+        value: investments
+          .filter((inv) => inv.type === "BONDS")
+          .reduce((sum, inv) => sum + inv.amount, 0)
+          .toFixed(2),
+        percentage: Math.round(
+          (investments.filter((inv) => inv.type === "BONDS").reduce((sum, inv) => sum + inv.amount, 0) / totalValue) * 100
+        ),
+        color: "bg-green-500",
+        progressColor: "bg-green-500",
+      },
+      {
+        name: "Crypto",
+        value: investments
+          .filter((inv) => inv.type === "CRYPTO")
+          .reduce((sum, inv) => sum + inv.amount, 0)
+          .toFixed(2),
+        percentage: Math.round(
+          (investments.filter((inv) => inv.type === "CRYPTO").reduce((sum, inv) => sum + inv.amount, 0) / totalValue) * 100
+        ),
+        color: "bg-orange-500",
+        progressColor: "bg-orange-500",
+      },
+    ];
+
+    return allocation;
+  };
+
+  if (loading) {
+    return <div className="flex justify-center p-8">Loading investments...</div>;
+  }
+
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Investments</h1>
           <div className="flex items-center gap-2">
-            <Button size="sm">New Investment</Button>
+            <Link href="/dashboard/investments/new">
+              <Button size="sm">New Investment</Button>
+            </Link>
           </div>
         </div>
 
@@ -25,7 +134,9 @@ export default function InvestmentsPage() {
               <Briefcase className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$12,234.59</div>
+              <div className="text-2xl font-bold">
+                ${assetAllocation.reduce((sum, asset) => sum + parseFloat(asset.value), 0).toFixed(2)}
+              </div>
               <div className="flex items-center text-xs text-emerald-500">
                 <ArrowUpRight className="mr-1 h-3 w-3" />
                 +12.3% ($1,345.23)
@@ -38,7 +149,7 @@ export default function InvestmentsPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$8,674.25</div>
+              <div className="text-2xl font-bold">${assetAllocation.find((a) => a.name === "Stocks")?.value}</div>
               <div className="flex items-center text-xs text-emerald-500">
                 <ArrowUpRight className="mr-1 h-3 w-3" />
                 +15.7% ($1,178.45)
@@ -51,7 +162,7 @@ export default function InvestmentsPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$2,450.00</div>
+              <div className="text-2xl font-bold">${assetAllocation.find((a) => a.name === "Bonds")?.value}</div>
               <div className="flex items-center text-xs text-rose-500">
                 <ArrowDownRight className="mr-1 h-3 w-3" />
                 -1.2% ($30.00)
@@ -64,7 +175,7 @@ export default function InvestmentsPage() {
               <PiggyBank className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$1,110.34</div>
+              <div className="text-2xl font-bold">${assetAllocation.find((a) => a.name === "Crypto")?.value}</div>
               <div className="flex items-center text-xs text-emerald-500">
                 <ArrowUpRight className="mr-1 h-3 w-3" />
                 +24.5% ($218.67)
@@ -116,41 +227,35 @@ export default function InvestmentsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Shares</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Value</TableHead>
-                      <TableHead className="text-right">Return</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Date</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {investments.map((investment) => (
-                      <TableRow key={investment.id}>
-                        <TableCell className="font-medium">{investment.name}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{investment.type}</Badge>
-                        </TableCell>
-                        <TableCell>{investment.shares}</TableCell>
-                        <TableCell>${investment.price}</TableCell>
-                        <TableCell>${investment.value}</TableCell>
-                        <TableCell className="text-right">
-                          <span
-                            className={cn(
-                              "flex items-center justify-end font-medium",
-                              Number.parseFloat(investment.return) >= 0 ? "text-emerald-500" : "text-rose-500",
-                            )}
-                          >
-                            {Number.parseFloat(investment.return) >= 0 ? (
-                              <ArrowUpRight className="mr-1 h-4 w-4" />
-                            ) : (
-                              <ArrowDownRight className="mr-1 h-4 w-4" />
-                            )}
-                            {investment.return}%
-                          </span>
+                    {investments.length > 0 ? (
+                      investments.map((investment) => (
+                        <TableRow key={investment.id}>
+                          <TableCell className="font-medium">
+                            <Badge variant="outline">{investment.type}</Badge>
+                          </TableCell>
+                          <TableCell>${investment.amount.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Badge variant={investment.status === "ACTIVE" ? "default" : "secondary"}>
+                              {investment.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{new Date(investment.createdAt).toLocaleDateString()}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center">
+                          No investments found.
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -179,29 +284,28 @@ export default function InvestmentsPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {opportunities.map((opportunity) => (
-                    <Card key={opportunity.id}>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">{opportunity.name}</CardTitle>
-                        <CardDescription>{opportunity.description}</CardDescription>
-                      </CardHeader>
-                      <CardContent className="pb-2">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm font-medium">Expected Return</p>
-                            <p className="text-emerald-500 font-bold">{opportunity.expectedReturn}%</p>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">Risk Level</p>
-                            <Badge variant={opportunity.riskVariant as "default" | "secondary" | "destructive" | "outline"}>{opportunity.risk}</Badge>
-                          </div>
+                  {/* Placeholder for investment opportunities */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg">Tech Growth Fund</CardTitle>
+                      <CardDescription>High-growth technology companies portfolio</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pb-2">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-sm font-medium">Expected Return</p>
+                          <p className="text-emerald-500 font-bold">12-15%</p>
                         </div>
-                      </CardContent>
-                      <CardFooter>
-                        <Button className="w-full">Invest Now</Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
+                        <div>
+                          <p className="text-sm font-medium">Risk Level</p>
+                          <Badge variant="outline">Moderate</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button className="w-full">Invest Now</Button>
+                    </CardFooter>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
@@ -209,129 +313,5 @@ export default function InvestmentsPage() {
         </Tabs>
       </div>
     </DashboardLayout>
-  )
-}
-
-// Sample data
-const assetAllocation = [
-  {
-    name: "Stocks",
-    value: "8,674.25",
-    percentage: 70,
-    color: "bg-blue-500",
-    progressColor: "bg-blue-500",
-  },
-  {
-    name: "Bonds",
-    value: "2,450.00",
-    percentage: 20,
-    color: "bg-green-500",
-    progressColor: "bg-green-500",
-  },
-  {
-    name: "Crypto",
-    value: "1,110.34",
-    percentage: 10,
-    color: "bg-orange-500",
-    progressColor: "bg-orange-500",
-  },
-]
-
-const investments = [
-  {
-    id: "1",
-    name: "Apple Inc.",
-    type: "Stock",
-    shares: "10",
-    price: "175.25",
-    value: "1,752.50",
-    return: "+15.3",
-  },
-  {
-    id: "2",
-    name: "Microsoft Corp.",
-    type: "Stock",
-    shares: "8",
-    price: "320.45",
-    value: "2,563.60",
-    return: "+22.7",
-  },
-  {
-    id: "3",
-    name: "US Treasury Bond",
-    type: "Bond",
-    shares: "5",
-    price: "490.00",
-    value: "2,450.00",
-    return: "-1.2",
-  },
-  {
-    id: "4",
-    name: "Bitcoin",
-    type: "Crypto",
-    shares: "0.02",
-    price: "42,500.00",
-    value: "850.00",
-    return: "+32.5",
-  },
-  {
-    id: "5",
-    name: "Ethereum",
-    type: "Crypto",
-    shares: "0.15",
-    price: "1,735.60",
-    value: "260.34",
-    return: "+18.7",
-  },
-  {
-    id: "6",
-    name: "Amazon.com Inc.",
-    type: "Stock",
-    shares: "4",
-    price: "145.50",
-    value: "582.00",
-    return: "+8.4",
-  },
-  {
-    id: "7",
-    name: "Tesla Inc.",
-    type: "Stock",
-    shares: "6",
-    price: "212.85",
-    value: "1,277.10",
-    return: "-5.2",
-  },
-]
-
-// Modified to ensure type safety
-const opportunities = [
-  {
-    id: "1",
-    name: "Tech Growth Fund",
-    description: "High-growth technology companies portfolio",
-    expectedReturn: "12-15",
-    risk: "Moderate",
-    riskVariant: "outline" as const,
-  },
-  {
-    id: "2",
-    name: "Sustainable Energy",
-    description: "Renewable energy investment portfolio",
-    expectedReturn: "8-12",
-    risk: "Low",
-    riskVariant: "secondary" as const,
-  },
-  {
-    id: "3",
-    name: "Crypto Index Fund",
-    description: "Diversified cryptocurrency portfolio",
-    expectedReturn: "20-30",
-    risk: "High",
-    riskVariant: "destructive" as const,
-  },
-]
-
-// Helper function
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(" ")
+  );
 }
