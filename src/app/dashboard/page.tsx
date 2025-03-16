@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,13 @@ import DashboardLayout from "@/components/dashboard-layout"
 import api from "@/utils/api"
 
 export default function DashboardPage() {
+  const router = useRouter()
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [loading, setLoading] = useState(true)
+  const [tokenValid, setTokenValid] = useState(false)
+
   interface DashboardData {
     totalBalance: number;
     netTransactions: number;
@@ -16,7 +24,6 @@ export default function DashboardPage() {
     totalInvestments: number;
   }
 
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   interface Transaction {
     id: string;
     type: 'CREDIT' | 'DEBIT';
@@ -26,7 +33,6 @@ export default function DashboardPage() {
     createdAt: string;
   }
 
-  const [transactions, setTransactions] = useState<Transaction[]>([])
   interface Account {
     id: string;
     type: string;
@@ -34,33 +40,72 @@ export default function DashboardPage() {
     balance: number;
   }
 
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [loading, setLoading] = useState(true)
-
   useEffect(() => {
-    const fetchData = async () => {
+    const checkTokenAndFetchData = async () => {
       try {
+        // Retrieve token from localStorage or cookies
+        const token = localStorage.getItem("token") // or use cookies if preferred
+        console.log("Token:", token)
+
+        if (!token) {
+          throw new Error("No token found")
+        }
+
+        // Verify token and retrieve user ID
+        const userResponse = await api.get("/auth/verify-token", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        const userId = userResponse
+
+        if (!userId) {
+          throw new Error("Invalid token or user ID not found")
+        }
+
+        // Token is valid, proceed to fetch dashboard data
+        setTokenValid(true)
+
         // Fetch dashboard overview data
-        const overviewResponse = await api.get('/dashboard/overview')
+        const overviewResponse = await api.get("/dashboard/overview", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
         setDashboardData(overviewResponse.data)
 
         // Fetch recent transactions
-        const transactionsResponse = await api.get('/transactions')
+        const transactionsResponse = await api.get("/transactions", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
         setTransactions(transactionsResponse.data)
 
         // Fetch user accounts
-        const accountsResponse = await api.get('/accounts/my-accounts')
+        const accountsResponse = await api.get("/accounts/my-accounts", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
         setAccounts(accountsResponse.data)
 
       } catch (error) {
-        console.error('Error fetching dashboard data:', error)
+        console.error("Error fetching dashboard data:", error)
+        setTokenValid(false)
+        router.push("/signup") // Redirect to signup page if token is invalid
       } finally {
         setLoading(false)
       }
     }
 
-    fetchData()
-  }, [])
+    checkTokenAndFetchData()
+  }, [router])
+
+  if (!tokenValid) {
+    return null // Redirect will happen automatically
+  }
 
   if (loading) {
     return <div className="flex justify-center p-8">Loading dashboard...</div>
@@ -83,7 +128,7 @@ export default function DashboardPage() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="overview" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {/* Total Balance */}

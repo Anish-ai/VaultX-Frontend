@@ -25,25 +25,53 @@ export default function AddInvestmentPage() {
   const [accountNumber, setAccountNumber] = useState<string>("");
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [tokenValid, setTokenValid] = useState<boolean>(false);
 
-  // Fetch user accounts on page load
+  // Verify token and fetch accounts on page load
   useEffect(() => {
-    const fetchAccounts = async () => {
+    const checkTokenAndFetchData = async () => {
       try {
-        const response = await api.get<Account[]>("/accounts/my-accounts");
-        setAccounts(response.data);
+        // Retrieve token from localStorage
+        const token = localStorage.getItem("token");
+        console.log("Token:", token);
+
+        if (!token) {
+          throw new Error("No token found");
+        }
+
+        // Verify token and retrieve user ID
+        const userResponse = await api.get("/auth/verify-token", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const userId = userResponse.data.userId;
+
+        if (!userId) {
+          throw new Error("Invalid token or user ID not found");
+        }
+
+        // Token is valid, proceed to fetch accounts
+        setTokenValid(true);
+
+        // Fetch user accounts
+        const accountsResponse = await api.get<Account[]>("/accounts/my-accounts", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setAccounts(accountsResponse.data);
+
       } catch (error) {
         console.error("Error fetching accounts:", error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch your accounts. Please try again.",
-          variant: "destructive",
-        });
+        setTokenValid(false);
+        router.push("/signup"); // Redirect to signup page if token is invalid
       }
     };
 
-    fetchAccounts();
-  }, [toast]);
+    checkTokenAndFetchData();
+  }, [router, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,11 +87,24 @@ export default function AddInvestmentPage() {
     console.log("[Frontend] Sending request to API...");
 
     try {
-      const response = await api.post("/investments/create", {
-        amount: parseFloat(amount),
-        type,
-        accountNumber,
-      });
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("No token found");
+      }
+
+      const response = await api.post(
+        "/investments/create",
+        {
+          amount: parseFloat(amount),
+          type,
+          accountNumber,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       console.log("[Frontend] API response:", response.data);
 
@@ -86,6 +127,10 @@ export default function AddInvestmentPage() {
       console.log("[Frontend] Submission process completed");
     }
   };
+
+  if (!tokenValid) {
+    return null; // Redirect will happen automatically
+  }
 
   return (
     <div className="container mx-auto p-4">

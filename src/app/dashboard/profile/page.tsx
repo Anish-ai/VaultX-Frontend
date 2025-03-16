@@ -1,6 +1,7 @@
 "use client"; // Mark this component as a Client Component
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,19 +26,48 @@ interface User {
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [tokenValid, setTokenValid] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const checkTokenAndFetchProfile = async () => {
       try {
-        // Fetch user profile
-        console.log("Token:", localStorage.getItem("token"));
-        const response = await api.get("/users/me");
-        console.log("API Response:", response.data); // Log the response for debugging
+        // Retrieve token from localStorage
+        const token = localStorage.getItem("token");
+        console.log("Token:", token);
 
-        if (response.data) {
-          setUser(response.data);
+        if (!token) {
+          throw new Error("No token found");
+        }
+
+        // Verify token and retrieve user ID
+        const userResponse = await api.get("/auth/verify-token", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const userId = userResponse.data.userId;
+
+        if (!userId) {
+          throw new Error("Invalid token or user ID not found");
+        }
+
+        // Token is valid, proceed to fetch user profile
+        setTokenValid(true);
+
+        // Fetch user profile
+        const profileResponse = await api.get("/users/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        console.log("API Response:", profileResponse.data); // Log the response for debugging
+
+        if (profileResponse.data) {
+          setUser(profileResponse.data);
         } else {
           console.error("Invalid response format: Expected user data");
           setUser(null); // Set user to null if data is invalid
@@ -45,13 +75,19 @@ export default function SettingsPage() {
       } catch (error) {
         console.error("Error fetching user profile:", error);
         setUser(null); // Set user to null in case of error
+        setTokenValid(false);
+        router.push("/signup"); // Redirect to signup page if token is invalid
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfile();
-  }, []);
+    checkTokenAndFetchProfile();
+  }, [router]);
+
+  if (!tokenValid) {
+    return null; // Redirect will happen automatically
+  }
 
   if (loading) {
     return <div className="flex justify-center p-8">Loading profile...</div>;

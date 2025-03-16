@@ -28,25 +28,53 @@ export default function NewTransactionPage() {
   })
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(false)
+  const [tokenValid, setTokenValid] = useState(false)
 
-  // Fetch user accounts on page load
+  // Verify token and fetch accounts on page load
   useEffect(() => {
-    const fetchAccounts = async () => {
+    const checkTokenAndFetchData = async () => {
       try {
-        const response = await api.get<Account[]>("/accounts/my-accounts")
-        setAccounts(response.data)
+        // Retrieve token from localStorage
+        const token = localStorage.getItem("token")
+        console.log("Token:", token)
+
+        if (!token) {
+          throw new Error("No token found")
+        }
+
+        // Verify token and retrieve user ID
+        const userResponse = await api.get("/auth/verify-token", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        const userId = userResponse.data.userId
+
+        if (!userId) {
+          throw new Error("Invalid token or user ID not found")
+        }
+
+        // Token is valid, proceed to fetch accounts
+        setTokenValid(true)
+
+        // Fetch user accounts
+        const accountsResponse = await api.get<Account[]>("/accounts/my-accounts", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        setAccounts(accountsResponse.data)
+
       } catch (error) {
         console.error("Error fetching accounts:", error)
-        toast({
-          title: "Error",
-          description: "Failed to fetch your accounts. Please try again.",
-          variant: "destructive",
-        })
+        setTokenValid(false)
+        router.push("/signup") // Redirect to signup page if token is invalid
       }
     }
 
-    fetchAccounts()
-  }, [toast])
+    checkTokenAndFetchData()
+  }, [router, toast])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -106,6 +134,10 @@ export default function NewTransactionPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!tokenValid) {
+    return null // Redirect will happen automatically
   }
 
   return (

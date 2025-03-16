@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowUpRight, ArrowDownRight, TrendingUp, PiggyBank, Briefcase, DollarSign } from "lucide-react";
 import DashboardLayout from "@/components/dashboard-layout";
 import api from "@/utils/api";
+import router from "next/router";
 
 // Define TypeScript interfaces
 interface Investment {
@@ -37,16 +38,41 @@ export default function InvestmentsPage() {
   const [assetAllocation, setAssetAllocation] = useState<AssetAllocation[]>([]);
 
   useEffect(() => {
-    const fetchInvestments = async () => {
+    const checkTokenAndFetchData = async () => {
       try {
-        // Fetch investments
-        const response = await api.get<{ data: Investment[] }>("/investments");
+        // Retrieve token from localStorage
+        const token = localStorage.getItem("token");
+        console.log("Token:", token);
+  
+        if (!token) {
+          throw new Error("No token found");
+        }
+  
+        // Verify token and retrieve user ID
+        const userResponse = await api.get("/auth/verify-token", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  
+        const userId = userResponse.data.userId;
+  
+        if (!userId) {
+          throw new Error("Invalid token or user ID not found");
+        }
+  
+        // Token is valid, proceed to fetch investments
+        const response = await api.get<{ data: Investment[] }>("/investments", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         console.log("API Response:", response.data); // Log the response for debugging
-
+  
         // Ensure the response data is an array
         if (Array.isArray(response.data.data)) {
           setInvestments(response.data.data);
-
+  
           // Calculate asset allocation
           const allocation = calculateAssetAllocation(response.data.data);
           setAssetAllocation(allocation);
@@ -57,13 +83,14 @@ export default function InvestmentsPage() {
       } catch (error) {
         console.error("Error fetching investments:", error);
         setInvestments([]); // Set investments to an empty array in case of error
+        router.push("/signup"); // Redirect to signup page if token is invalid
       } finally {
         setLoading(false);
       }
     };
-
-    fetchInvestments();
-  }, []);
+  
+    checkTokenAndFetchData();
+  }, [router]);
 
   // Calculate asset allocation based on investments
   const calculateAssetAllocation = (investments: Investment[]): AssetAllocation[] => {

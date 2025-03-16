@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { CreditCard, PiggyBank, Briefcase, Plus, ExternalLink, Download } from "lucide-react"
 import DashboardLayout from "@/components/dashboard-layout"
 import api from "@/utils/api"
+import router from "next/router"
 
 // Define TypeScript interfaces
 interface Account {
@@ -38,25 +39,54 @@ export default function AccountsPage() {
   const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
-    const fetchData = async () => {
+    const checkTokenAndFetchData = async () => {
       try {
-        // Fetch user accounts
-        const accountsResponse = await api.get<Account[]>('/accounts/my-accounts')
-        setAccounts(accountsResponse.data)
-
-        // Fetch recent transactions
-        const transactionsResponse = await api.get<Transaction[]>('/transactions')
-        setTransactions(transactionsResponse.data)
-
+        // Retrieve token from localStorage
+        const token = localStorage.getItem("token");
+        console.log("Token:", token);
+  
+        if (!token) {
+          throw new Error("No token found");
+        }
+  
+        // Verify token and retrieve user ID
+        const userResponse = await api.get("/auth/verify-token", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+  
+        const userId = userResponse.data.userId;
+  
+        if (!userId) {
+          throw new Error("Invalid token or user ID not found");
+        }
+  
+        // Token is valid, proceed to fetch accounts and transactions
+        const accountsResponse = await api.get<Account[]>('/accounts/my-accounts', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setAccounts(accountsResponse.data);
+  
+        const transactionsResponse = await api.get<Transaction[]>('/transactions', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setTransactions(transactionsResponse.data);
+  
       } catch (error) {
-        console.error('Error fetching accounts data:', error)
+        console.error('Error fetching accounts data:', error);
+        router.push("/signup"); // Redirect to signup page if token is invalid
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-
-    fetchData()
-  }, [])
+    };
+  
+    checkTokenAndFetchData();
+  }, [router]);
 
   if (loading) {
     return <div className="flex justify-center p-8">Loading accounts...</div>
