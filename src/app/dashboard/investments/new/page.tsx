@@ -46,7 +46,7 @@ export default function AddInvestmentPage() {
           },
         });
 
-        const userId = userResponse.data.userId;
+        const userId = userResponse;
 
         if (!userId) {
           throw new Error("Invalid token or user ID not found");

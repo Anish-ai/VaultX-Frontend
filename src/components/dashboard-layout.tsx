@@ -16,6 +16,7 @@ import {
   Menu,
   User,
   Loader2,
+  DollarSign,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -63,6 +64,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Accounts", href: "/dashboard/accounts", icon: CreditCard },
+    {name: "Loans", href: "/dashboard/loans", icon: DollarSign},
     { name: "Transactions", href: "/dashboard/transactions", icon: BarChart3 },
     { name: "Investments", href: "/dashboard/investments", icon: PiggyBank },
     { name: "Notifications", href: "/dashboard/notifications", icon: Bell, badge: unreadNotifications },

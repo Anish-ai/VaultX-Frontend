@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { ArrowUpRight, ArrowDownRight, TrendingUp, PiggyBank, Briefcase, DollarSign } from "lucide-react";
 import DashboardLayout from "@/components/dashboard-layout";
 import api from "@/utils/api";
-import router from "next/router";
+import { useRouter } from "next/navigation";
 
 // Define TypeScript interfaces
 interface Investment {
@@ -36,6 +36,7 @@ export default function InvestmentsPage() {
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [assetAllocation, setAssetAllocation] = useState<AssetAllocation[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     const checkTokenAndFetchData = async () => {
@@ -55,7 +56,7 @@ export default function InvestmentsPage() {
           },
         });
   
-        const userId = userResponse.data.userId;
+        const userId = userResponse;
   
         if (!userId) {
           throw new Error("Invalid token or user ID not found");

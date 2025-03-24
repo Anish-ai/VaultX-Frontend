@@ -36,7 +36,6 @@ export default function NewTransactionPage() {
       try {
         // Retrieve token from localStorage
         const token = localStorage.getItem("token")
-        console.log("Token:", token)
 
         if (!token) {
           throw new Error("No token found")
@@ -49,7 +48,7 @@ export default function NewTransactionPage() {
           },
         })
 
-        const userId = userResponse.data.userId
+        const userId = userResponse
 
         if (!userId) {
           throw new Error("Invalid token or user ID not found")
@@ -69,20 +68,20 @@ export default function NewTransactionPage() {
       } catch (error) {
         console.error("Error fetching accounts:", error)
         setTokenValid(false)
-        router.push("/signup") // Redirect to signup page if token is invalid
+        router.push("/auth/login")
       }
     }
 
     checkTokenAndFetchData()
-  }, [router, toast])
+  }, [router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,21 +89,15 @@ export default function NewTransactionPage() {
     setLoading(true)
 
     try {
-      // Validate form data
-      if (
-        !formData.senderAccountNumber ||
-        !formData.receiverAccountNumber ||
-        !formData.amount ||
-        parseFloat(formData.amount) <= 0
-      ) {
-        throw new Error("Please fill in all fields with valid data")
+      // Find the selected account to check balance
+      const selectedAccount = accounts.find(acc => acc.accountNumber === formData.senderAccountNumber)
+      
+      if (!selectedAccount) {
+        throw new Error("Selected account not found")
       }
-
-      // Check if sender has sufficient balance
-      const senderAccount = accounts.find(
-        (account) => account.accountNumber === formData.senderAccountNumber
-      )
-      if (!senderAccount || senderAccount.balance < parseFloat(formData.amount)) {
+      
+      // Check if the account has sufficient balance
+      if (selectedAccount.balance < parseFloat(formData.amount)) {
         throw new Error("Insufficient balance in the selected account")
       }
 
@@ -121,9 +114,9 @@ export default function NewTransactionPage() {
         title: "Transaction Created",
         description: "Your transaction has been successfully processed.",
       })
-
+      
       // Redirect to transactions page
-      router.push("/transactions")
+      router.push("/dashboard/transactions")
     } catch (error: any) {
       console.error("Error creating transaction:", error)
       toast({
@@ -201,7 +194,7 @@ export default function NewTransactionPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/transactions")}
+                onClick={() => router.push("/dashboard/transactions")}
                 disabled={loading}
               >
                 Cancel
