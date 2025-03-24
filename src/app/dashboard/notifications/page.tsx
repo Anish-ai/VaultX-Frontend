@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -8,36 +8,99 @@ import { Badge } from "@/components/ui/badge"
 import { Bell, Check, Clock, CreditCard, Info, Shield, Trash2, User } from "lucide-react"
 import { PageTransition } from "@/components/page-transition"
 import DashboardLayout from "@/components/dashboard-layout"
+import api from "@/utils/api"
+import { formatDistanceToNow } from "date-fns"
+import { useRouter } from "next/navigation"
+
+interface SecurityLog {
+  id: string
+  eventType: string
+  details: any
+  ipAddress: string
+  userAgent: string
+  createdAt: string
+  read?: boolean
+}
+
+interface NotificationCardProps {
+  notification: {
+    id: string
+    title: string
+    message: string
+    time: string
+    type: "transaction" | "security" | "account"
+    read: boolean
+    priority?: "high" | "medium" | "low"
+  }
+  onMarkAsRead: (id: string) => void
+  onDelete: (id: string) => void
+}
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState(allNotifications)
+  const [logs, setLogs] = useState<SecurityLog[]>([])
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+
+  useEffect(() => {
+    fetchLogs()
+  }, [])
+
+  const fetchLogs = async () => {
+    try {
+      const response = await api.get("/security-logs/my-logs")
+      setLogs(response.data
+        .filter((log: SecurityLog) => log.eventType !== 'NULL')
+        .map((log: SecurityLog) => ({ ...log, read: false }))
+      )
+    } catch (error) {
+      console.error("Error fetching security logs:", error)
+      router.push("/auth/login")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const markAllAsRead = () => {
-    setNotifications(
-      notifications.map((notification) => ({
-        ...notification,
-        read: true,
-      })),
-    )
+    setLogs(logs.map(log => ({ ...log, read: true })))
   }
 
   const clearAllNotifications = () => {
-    setNotifications([])
+    setLogs([])
   }
 
   const markAsRead = (id: string) => {
-    setNotifications(
-      notifications.map((notification) => (notification.id === id ? { ...notification, read: true } : notification)),
-    )
+    setLogs(logs.map(log => log.id === id ? { ...log, read: true } : log))
   }
 
   const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter((notification) => notification.id !== id))
+    setLogs(logs.filter(log => log.id !== id))
   }
 
   const getUnreadCount = (type?: string) => {
-    return notifications.filter((notification) => !notification.read && (type ? notification.type === type : true))
-      .length
+    return logs.filter(log => !log.read && (type ? getLogType(log.eventType) === type : true)).length
+  }
+
+  const getLogType = (eventType: string): "transaction" | "security" | "account" => {
+    if (eventType.includes("TRANSACTION") || eventType.includes("ASSET")) {
+      return "transaction"
+    }
+    if (eventType.includes("LOGIN") || eventType.includes("PASSWORD") || eventType.includes("MFA") || eventType.includes("SUSPICIOUS")) {
+      return "security"
+    }
+    return "account"
+  }
+
+  const getPriority = (eventType: string): "high" | "medium" | "low" | undefined => {
+    if (eventType.includes("FAILED") || eventType.includes("SUSPICIOUS")) {
+      return "high"
+    }
+    if (eventType.includes("TRANSACTION") || eventType.includes("LOAN")) {
+      return "medium"
+    }
+    if (eventType.includes("PROFILE") || eventType.includes("ACCOUNT")) {
+      return "low"
+    }
+    return undefined
   }
 
   return (
@@ -85,11 +148,20 @@ export default function NotificationsPage() {
             </TabsList>
 
             <TabsContent value="all" className="space-y-4">
-              {notifications.length > 0 ? (
-                notifications.map((notification) => (
+              {loading ? (
+                <LoadingState />
+              ) : logs.length > 0 ? (
+                logs.map((log) => (
                   <NotificationCard
-                    key={notification.id}
-                    notification={notification}
+                    key={log.id}
+                    notification={{
+                      ...log,
+                      type: getLogType(log.eventType),
+                      priority: getPriority(log.eventType),
+                      title: log.eventType.replace(/_/g, " ").toLowerCase(),
+                      message: getEventDescription(log),
+                      time: formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })
+                    }}
                     onMarkAsRead={markAsRead}
                     onDelete={deleteNotification}
                   />
@@ -99,67 +171,38 @@ export default function NotificationsPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="transactions" className="space-y-4">
-              {notifications.filter((n) => n.type === "transaction").length > 0 ? (
-                notifications
-                  .filter((n) => n.type === "transaction")
-                  .map((notification) => (
-                    <NotificationCard
-                      key={notification.id}
-                      notification={notification}
-                      onMarkAsRead={markAsRead}
-                      onDelete={deleteNotification}
-                    />
-                  ))
-              ) : (
-                <EmptyState message="No transaction notifications" />
-              )}
-            </TabsContent>
-
-            <TabsContent value="security" className="space-y-4">
-              {notifications.filter((n) => n.type === "security").length > 0 ? (
-                notifications
-                  .filter((n) => n.type === "security")
-                  .map((notification) => (
-                    <NotificationCard
-                      key={notification.id}
-                      notification={notification}
-                      onMarkAsRead={markAsRead}
-                      onDelete={deleteNotification}
-                    />
-                  ))
-              ) : (
-                <EmptyState message="No security notifications" />
-              )}
-            </TabsContent>
-
-            <TabsContent value="account" className="space-y-4">
-              {notifications.filter((n) => n.type === "account").length > 0 ? (
-                notifications
-                  .filter((n) => n.type === "account")
-                  .map((notification) => (
-                    <NotificationCard
-                      key={notification.id}
-                      notification={notification}
-                      onMarkAsRead={markAsRead}
-                      onDelete={deleteNotification}
-                    />
-                  ))
-              ) : (
-                <EmptyState message="No account notifications" />
-              )}
-            </TabsContent>
+            {["transactions", "security", "account"].map((type) => (
+              <TabsContent key={type} value={type} className="space-y-4">
+                {loading ? (
+                  <LoadingState />
+                ) : logs.filter((log) => getLogType(log.eventType) === type).length > 0 ? (
+                  logs
+                    .filter((log) => getLogType(log.eventType) === type)
+                    .map((log) => (
+                      <NotificationCard
+                        key={log.id}
+                        notification={{
+                          ...log,
+                          type: getLogType(log.eventType),
+                          priority: getPriority(log.eventType),
+                          title: log.eventType.replace(/_/g, " ").toLowerCase(),
+                          message: getEventDescription(log),
+                          time: formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })
+                        }}
+                        onMarkAsRead={markAsRead}
+                        onDelete={deleteNotification}
+                      />
+                    ))
+                ) : (
+                  <EmptyState message={`No ${type} notifications`} />
+                )}
+              </TabsContent>
+            ))}
           </Tabs>
         </div>
       </PageTransition>
     </DashboardLayout>
   )
-}
-
-interface NotificationCardProps {
-  notification: Notification
-  onMarkAsRead: (id: string) => void
-  onDelete: (id: string) => void
 }
 
 function NotificationCard({ notification, onMarkAsRead, onDelete }: NotificationCardProps) {
@@ -239,6 +282,24 @@ function NotificationCard({ notification, onMarkAsRead, onDelete }: Notification
   )
 }
 
+function LoadingState() {
+  return (
+    <Card className="p-4">
+      <div className="space-y-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex items-start gap-4">
+            <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-[60%] bg-muted animate-pulse rounded" />
+              <div className="h-3 w-[40%] bg-muted animate-pulse rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
@@ -251,76 +312,61 @@ function EmptyState({ message }: { message: string }) {
   )
 }
 
-// Sample data
-interface Notification {
-  id: string
-  title: string
-  message: string
-  time: string
-  type: "transaction" | "security" | "account"
-  read: boolean
-  priority?: "high" | "medium" | "low"
+function getEventDescription(log: SecurityLog): string {
+  switch (log.eventType) {
+    // Auth Events
+    case "SUCCESSFUL_LOGIN":
+      return `Successful login from ${log.ipAddress}`
+    case "FAILED_LOGIN_ATTEMPT":
+      return `Failed login attempt from ${log.ipAddress}`
+    case "SIGNUP_INITIATED":
+      return "Account creation initiated"
+    case "ACCOUNT_VERIFICATION":
+      return "Account successfully verified"
+    case "PASSWORD_RESET_REQUESTED":
+      return "Password reset requested"
+    case "PASSWORD_RESET_COMPLETED":
+      return "Password successfully reset"
+    
+    // Transaction & Asset Events
+    case "ASSET_TRANSFER":
+    case "TRANSACTION_COMPLETED":
+      return `Transaction of ${log.details?.amount} ${log.details?.currency || 'USD'} ${log.details?.type === 'SENT' ? 'sent to' : 'received from'} ${log.details?.otherParty}`
+    case "TRANSACTION_FAILED":
+      return `Transaction failed: ${log.details?.reason || 'Unknown error'}`
+    
+    // Loan Events
+    case "LOAN_APPLICATION":
+      return `Loan application submitted for ${log.details?.amount} ${log.details?.currency || 'USD'}`
+    case "LOAN_APPROVED":
+      return `Loan approved for ${log.details?.amount} ${log.details?.currency || 'USD'}`
+    case "LOAN_REJECTED":
+      return `Loan application rejected: ${log.details?.reason || 'No reason provided'}`
+    case "LOAN_REPAID":
+      return `Loan fully repaid`
+    
+    // Investment Events
+    case "INVESTMENT_CREATED":
+      return `New investment of ${log.details?.amount} ${log.details?.currency || 'USD'} in ${log.details?.type}`
+    case "INVESTMENT_CLOSED":
+      return `Investment closed with ${log.details?.returnAmount} ${log.details?.currency || 'USD'} return`
+    
+    // User Events
+    case "PROFILE_UPDATE":
+      return "Profile information updated"
+    case "PROFILE_COMPLETED":
+      return "Profile setup completed"
+    case "MFA_ENABLED":
+      return "Two-factor authentication enabled"
+    case "MFA_DISABLED":
+      return "Two-factor authentication disabled"
+    
+    // Security Events
+    case "SUSPICIOUS_ACTIVITY":
+      return `Suspicious activity detected from ${log.ipAddress}`
+    
+    default:
+      return `${log.eventType.replace(/_/g, " ").toLowerCase()}`
+  }
 }
-
-const allNotifications: Notification[] = [
-  {
-    id: "1",
-    title: "Large Transaction Alert",
-    message: "A transaction of $2,500 was made from your checking account to an external account.",
-    time: "Just now",
-    type: "transaction",
-    read: false,
-    priority: "medium",
-  },
-  {
-    id: "2",
-    title: "Suspicious Login Attempt",
-    message: "We detected a login attempt from an unrecognized device in New York, USA.",
-    time: "10 minutes ago",
-    type: "security",
-    read: false,
-    priority: "high",
-  },
-  {
-    id: "3",
-    title: "Password Changed",
-    message: "Your account password was successfully changed.",
-    time: "1 hour ago",
-    type: "security",
-    read: true,
-  },
-  {
-    id: "4",
-    title: "Direct Deposit Received",
-    message: "You received a direct deposit of $3,450.00 from ACME Corp.",
-    time: "3 hours ago",
-    type: "transaction",
-    read: false,
-    priority: "low",
-  },
-  {
-    id: "5",
-    title: "Account Statement Available",
-    message: "Your February 2023 account statement is now available for download.",
-    time: "Yesterday",
-    type: "account",
-    read: true,
-  },
-  {
-    id: "6",
-    title: "New Device Added",
-    message: "A new device was added to your account. If this wasn't you, please contact us immediately.",
-    time: "2 days ago",
-    type: "security",
-    read: true,
-  },
-  {
-    id: "7",
-    title: "Investment Portfolio Update",
-    message: "Your investment portfolio has increased by 3.2% this month.",
-    time: "3 days ago",
-    type: "account",
-    read: true,
-  },
-]
 
