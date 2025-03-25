@@ -1,4 +1,3 @@
-// components/loan-apply-dialog.tsx
 "use client"
 
 import { useState } from "react"
@@ -41,7 +40,6 @@ export function LoanApplyDialog({ onSuccess }: { onSuccess: () => void }) {
       
       if (response.data.success) {
         setOpen(false)
-        // Reset form
         setFormData({
           amount: "",
           accountNumber: "",
@@ -62,15 +60,21 @@ export function LoanApplyDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="default">Apply for Loan</Button>
+        <Button variant="default" className="transition-all hover:scale-105">
+          Apply for Loan
+        </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-[90vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New Loan Application</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <div className="text-red-500 text-sm">{error}</div>}
+          {error && (
+            <div className="text-sm text-destructive p-2 rounded bg-destructive/10">
+              {error}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Loan Amount ($)</Label>
@@ -82,19 +86,8 @@ export function LoanApplyDialog({ onSuccess }: { onSuccess: () => void }) {
               min="100"
               step="100"
               placeholder="Enter loan amount"
+              className="transition-all focus:ring-2 focus:ring-primary/50"
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Due Date</Label>
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              fromDate={new Date()}
-              className="rounded-md border"
-            />
-            <p className="text-xs text-muted-foreground">Select a future date for loan repayment</p>
           </div>
 
           <div className="space-y-2">
@@ -104,6 +97,7 @@ export function LoanApplyDialog({ onSuccess }: { onSuccess: () => void }) {
               onChange={(e) => setFormData({...formData, accountNumber: e.target.value})}
               required
               placeholder="Enter your account number"
+              className="transition-all focus:ring-2 focus:ring-primary/50"
             />
             <p className="text-xs text-muted-foreground">Must be one of your registered accounts</p>
           </div>
@@ -118,12 +112,34 @@ export function LoanApplyDialog({ onSuccess }: { onSuccess: () => void }) {
               min="5"
               max="20"
               placeholder="5.0"
+              className="transition-all focus:ring-2 focus:ring-primary/50"
             />
             <p className="text-xs text-muted-foreground">Interest rate between 5% and 20%</p>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : "Submit Application"}
+          <div className="space-y-2">
+            <Label>Due Date</Label>
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              fromDate={new Date()}
+              className="rounded-md border w-full"
+            />
+            <p className="text-xs text-muted-foreground">Select a future date for loan repayment</p>
+          </div>
+
+          <Button 
+            type="submit" 
+            className="w-full transition-all hover:scale-105" 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent" />
+                Submitting...
+              </span>
+            ) : "Submit Application"}
           </Button>
         </form>
       </DialogContent>

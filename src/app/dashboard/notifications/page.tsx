@@ -110,39 +110,69 @@ export default function NotificationsPage() {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={markAllAsRead}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={markAllAsRead}
+                className="transition-all hover:scale-105"
+              >
                 Mark all as read
               </Button>
-              <Button variant="outline" size="sm" onClick={clearAllNotifications}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={clearAllNotifications}
+                className="transition-all hover:scale-105"
+              >
                 Clear all
               </Button>
             </div>
           </div>
 
           <Tabs defaultValue="all" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="all" className="relative">
+            <TabsList className="transition-all">
+              <TabsTrigger 
+                value="all" 
+                className="relative transition-all hover:bg-primary/10"
+              >
                 All
                 {getUnreadCount() > 0 && (
-                  <Badge className="ml-2 bg-primary text-primary-foreground">{getUnreadCount()}</Badge>
+                  <Badge className="ml-2 bg-primary text-primary-foreground transition-all hover:scale-105">
+                    {getUnreadCount()}
+                  </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="transactions" className="relative">
+              <TabsTrigger 
+                value="transactions" 
+                className="relative transition-all hover:bg-primary/10"
+              >
                 Transactions
                 {getUnreadCount("transaction") > 0 && (
-                  <Badge className="ml-2 bg-primary text-primary-foreground">{getUnreadCount("transaction")}</Badge>
+                  <Badge className="ml-2 bg-primary text-primary-foreground transition-all hover:scale-105">
+                    {getUnreadCount("transaction")}
+                  </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="security" className="relative">
+              <TabsTrigger 
+                value="security" 
+                className="relative transition-all hover:bg-primary/10"
+              >
                 Security
                 {getUnreadCount("security") > 0 && (
-                  <Badge className="ml-2 bg-primary text-primary-foreground">{getUnreadCount("security")}</Badge>
+                  <Badge className="ml-2 bg-primary text-primary-foreground transition-all hover:scale-105">
+                    {getUnreadCount("security")}
+                  </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="account" className="relative">
+              <TabsTrigger 
+                value="account" 
+                className="relative transition-all hover:bg-primary/10"
+              >
                 Account
                 {getUnreadCount("account") > 0 && (
-                  <Badge className="ml-2 bg-primary text-primary-foreground">{getUnreadCount("account")}</Badge>
+                  <Badge className="ml-2 bg-primary text-primary-foreground transition-all hover:scale-105">
+                    {getUnreadCount("account")}
+                  </Badge>
                 )}
               </TabsTrigger>
             </TabsList>
@@ -235,11 +265,11 @@ function NotificationCard({ notification, onMarkAsRead, onDelete }: Notification
   }
 
   return (
-    <Card className={`transition-all duration-200 ${!read ? "border-primary/50 bg-primary/5" : ""}`}>
+    <Card className={`transition-all duration-200 hover:shadow-lg ${!read ? "border-primary/50 bg-primary/5" : ""}`}>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div className="flex items-start gap-2">
           <div
-            className={`flex h-9 w-9 items-center justify-center rounded-full ${
+            className={`flex h-9 w-9 items-center justify-center rounded-full transition-all hover:scale-110 ${
               type === "security"
                 ? "bg-destructive/10 text-destructive"
                 : type === "transaction"
@@ -258,7 +288,7 @@ function NotificationCard({ notification, onMarkAsRead, onDelete }: Notification
           </div>
         </div>
         {priority && (
-          <Badge variant="outline" className={getPriorityColor()}>
+          <Badge variant="outline" className={`${getPriorityColor()} transition-all hover:scale-105`}>
             {priority.charAt(0).toUpperCase() + priority.slice(1)}
           </Badge>
         )}
@@ -268,12 +298,22 @@ function NotificationCard({ notification, onMarkAsRead, onDelete }: Notification
       </CardContent>
       <CardFooter className="flex justify-end gap-2 pt-0">
         {!read && (
-          <Button variant="ghost" size="sm" onClick={() => onMarkAsRead(id)}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => onMarkAsRead(id)}
+            className="transition-all hover:scale-105"
+          >
             <Check className="mr-1 h-4 w-4" />
             Mark as read
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={() => onDelete(id)}>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => onDelete(id)}
+          className="transition-all hover:scale-105"
+        >
           <Trash2 className="mr-1 h-4 w-4" />
           Delete
         </Button>
@@ -284,8 +324,9 @@ function NotificationCard({ notification, onMarkAsRead, onDelete }: Notification
 
 function LoadingState() {
   return (
-    <Card className="p-4">
-      <div className="space-y-4">
+    <Card className="relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-muted to-transparent animate-shimmer" />
+      <div className="p-4 space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="flex items-start gap-4">
             <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
@@ -302,8 +343,8 @@ function LoadingState() {
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center transition-all hover:shadow-sm">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted transition-all hover:scale-110">
         <Info className="h-6 w-6 text-muted-foreground" />
       </div>
       <h3 className="mt-4 text-lg font-semibold">{message}</h3>
@@ -369,4 +410,3 @@ function getEventDescription(log: SecurityLog): string {
       return `${log.eventType.replace(/_/g, " ").toLowerCase()}`
   }
 }
-

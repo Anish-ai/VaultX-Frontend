@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Shield } from "lucide-react"
+import { Shield, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import api from "@/utils/api"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 export default function ProfilePage() {
   const [formData, setFormData] = useState({
@@ -18,15 +19,14 @@ export default function ProfilePage() {
     phone: "",
     address: "",
     dateOfBirth: "",
-    accountType: "SAVINGS", // Default account type
+    accountType: "SAVINGS",
     initialBalance: "",
-    currency: "USD" // Default currency
+    currency: "USD"
   })
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
 
-  // Check if user is authenticated
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) {
@@ -54,16 +54,12 @@ export default function ProfilePage() {
 
     try {
       const token = localStorage.getItem("token")
-      if (!token) {
-        throw new Error("Authentication required")
-      }
+      if (!token) throw new Error("Authentication required")
 
-      // Validate all fields
       if (!formData.name || !formData.phone || !formData.address || !formData.accountType || !formData.initialBalance || !formData.currency) {
         throw new Error("All fields are required")
       }
 
-      // Make API request to update profile
       const profileResponse = await api.post("/auth/profile", {
         name: formData.name,
         phone: formData.phone,
@@ -74,10 +70,8 @@ export default function ProfilePage() {
         }
       })
 
-      // Store updated user data
       localStorage.setItem("user", JSON.stringify(profileResponse.data))
 
-      // Make API request to create account
       const accountResponse = await api.post("/accounts", {
         type: formData.accountType,
         balance: parseFloat(formData.initialBalance),
@@ -93,7 +87,6 @@ export default function ProfilePage() {
         description: "Your profile and account have been created successfully.",
       })
 
-      // Redirect to dashboard
       router.push("/dashboard")
     } catch (error: any) {
       toast({
@@ -107,12 +100,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/50 px-4 py-12">
-      <Card className="w-full max-w-2xl"> {/* Increased width */}
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-muted/20 to-background px-4 py-12">
+      <Card className="w-full max-w-2xl transition-all hover:shadow-lg">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-              <Shield className="h-6 w-6" />
+            <Link href="/" className="flex items-center gap-2 font-bold text-2xl transition-all hover:scale-105">
+              <Shield className="h-6 w-6 text-primary" />
               <span>VaultX</span>
             </Link>
           </div>
@@ -123,7 +116,7 @@ export default function ProfilePage() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4"> {/* Grid layout for multiple fields in one line */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Profile Fields */}
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
@@ -134,6 +127,7 @@ export default function ProfilePage() {
                   value={formData.name}
                   onChange={handleChange}
                   required
+                  className="transition-all focus-visible:ring-2 focus-visible:ring-primary/50"
                 />
               </div>
               <div className="space-y-2">
@@ -146,9 +140,10 @@ export default function ProfilePage() {
                   value={formData.phone}
                   onChange={handleChange}
                   required
+                  className="transition-all focus-visible:ring-2 focus-visible:ring-primary/50"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="address">Address</Label>
                 <Input
                   id="address"
@@ -157,6 +152,7 @@ export default function ProfilePage() {
                   value={formData.address}
                   onChange={handleChange}
                   required
+                  className="transition-all focus-visible:ring-2 focus-visible:ring-primary/50"
                 />
               </div>
               <div className="space-y-2">
@@ -167,6 +163,7 @@ export default function ProfilePage() {
                   type="date"
                   value={formData.dateOfBirth}
                   onChange={handleChange}
+                  className="transition-all focus-visible:ring-2 focus-visible:ring-primary/50"
                 />
               </div>
 
@@ -178,13 +175,13 @@ export default function ProfilePage() {
                   onValueChange={(value) => handleSelectChange("accountType", value)}
                   required
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/50">
                     <SelectValue placeholder="Select account type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SAVINGS">Savings</SelectItem>
-                    <SelectItem value="CHECKING">Checking</SelectItem>
-                    <SelectItem value="INVESTMENT">Investment</SelectItem>
+                    <SelectItem value="SAVINGS" className="transition-all hover:bg-primary/10">Savings</SelectItem>
+                    <SelectItem value="CHECKING" className="transition-all hover:bg-primary/10">Checking</SelectItem>
+                    <SelectItem value="INVESTMENT" className="transition-all hover:bg-primary/10">Investment</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -198,6 +195,7 @@ export default function ProfilePage() {
                   value={formData.initialBalance}
                   onChange={handleChange}
                   required
+                  className="transition-all focus-visible:ring-2 focus-visible:ring-primary/50"
                 />
               </div>
               <div className="space-y-2">
@@ -207,22 +205,36 @@ export default function ProfilePage() {
                   onValueChange={(value) => handleSelectChange("currency", value)}
                   required
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/50">
                     <SelectValue placeholder="Select currency" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                    <SelectItem value="INR">INR</SelectItem>
+                    <SelectItem value="USD" className="transition-all hover:bg-primary/10">USD</SelectItem>
+                    <SelectItem value="EUR" className="transition-all hover:bg-primary/10">EUR</SelectItem>
+                    <SelectItem value="GBP" className="transition-all hover:bg-primary/10">GBP</SelectItem>
+                    <SelectItem value="INR" className="transition-all hover:bg-primary/10">INR</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating profile and account..." : "Complete profile and create account"}
+            <Button 
+              type="submit" 
+              className="w-full transition-all hover:scale-[1.02]" 
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner className="h-4 w-4" />
+                  <span>Creating profile...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span>Complete profile</span>
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+              )}
             </Button>
             <div className="text-center text-sm text-muted-foreground">
               You can update this information later from your account settings.

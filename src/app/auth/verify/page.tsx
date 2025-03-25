@@ -3,32 +3,32 @@
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Shield } from "lucide-react"
+import { Shield, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import api from "@/utils/api"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 export default function VerifyPage() {
   const [code, setCode] = useState(["", "", "", "", "", ""])
   const [isLoading, setIsLoading] = useState(false)
+  const [isResending, setIsResending] = useState(false)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
   const router = useRouter()
   const { toast } = useToast()
 
-  // Initialize refs array
   useEffect(() => {
     inputRefs.current = inputRefs.current.slice(0, code.length)
   }, [code.length])
 
-  // Get email and action from URL
   const getQueryParams = () => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search)
       return {
         email: params.get("email") || "",
-        action: params.get("action") || "signup" // Default to signup
+        action: params.get("action") || "signup"
       }
     }
     return { email: "", action: "signup" }
@@ -75,7 +75,6 @@ export default function VerifyPage() {
         throw new Error("Email not found")
       }
 
-      // Different API endpoints based on action (signup or login)
       let response
       if (action === "signup") {
         response = await api.post("/auth/verify", { 
@@ -83,7 +82,6 @@ export default function VerifyPage() {
           otp: verificationCode 
         })
         
-        // Store token
         if (response.data.token) {
           localStorage.setItem("token", response.data.token)
         }
@@ -93,10 +91,8 @@ export default function VerifyPage() {
           description: "Please complete your profile.",
         })
         
-        // Redirect to profile completion
         router.push("/auth/register")
       } else {
-        // Login verification
         const userIdString = new URLSearchParams(window.location.search).get("userId")
         const userId = userIdString ? parseInt(userIdString) : null
         if (!userId) {
@@ -108,7 +104,6 @@ export default function VerifyPage() {
           otp: verificationCode 
         })
         
-        // Store token and user data
         if (response.data.token) {
           localStorage.setItem("token", response.data.token)
           localStorage.setItem("user", JSON.stringify(response.data.user))
@@ -119,7 +114,6 @@ export default function VerifyPage() {
           description: "Redirecting to your dashboard...",
         })
         
-        // Redirect to dashboard
         router.push("/dashboard")
       }
     } catch (error: any) {
@@ -137,8 +131,8 @@ export default function VerifyPage() {
     const { email, action } = getQueryParams()
     if (!email) return
 
+    setIsResending(true)
     try {
-      // Different endpoints for resending OTP based on action
       if (action === "signup") {
         await api.post("/auth/resend-otp", { email })
       } else {
@@ -155,6 +149,8 @@ export default function VerifyPage() {
         title: "Failed to resend code",
         description: error.response?.data?.message || "Please try again later.",
       })
+    } finally {
+      setIsResending(false)
     }
   }
 
@@ -162,12 +158,12 @@ export default function VerifyPage() {
   const verifyingAction = action === "signup" ? "account" : "login"
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/50 px-4 py-12">
-      <Card className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-muted/20 to-background px-4 py-12">
+      <Card className="w-full max-w-md transition-all hover:shadow-lg">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-              <Shield className="h-6 w-6" />
+            <Link href="/" className="flex items-center gap-2 font-bold text-2xl transition-all hover:scale-105">
+              <Shield className="h-6 w-6 text-primary" />
               <span>VaultX</span>
             </Link>
           </div>
@@ -177,8 +173,8 @@ export default function VerifyPage() {
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div className="flex justify-center gap-2">
+          <CardContent className="space-y-6">
+            <div className="flex justify-center gap-3">
               {code.map((digit, index) => (
                 <Input
                   key={index}
@@ -192,24 +188,47 @@ export default function VerifyPage() {
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onPaste={index === 0 ? handlePaste : undefined}
-                  className="h-12 w-12 text-center text-lg"
+                  className="h-14 w-14 text-center text-xl font-semibold transition-all focus-visible:ring-2 focus-visible:ring-primary/50"
                   autoFocus={index === 0}
                 />
               ))}
             </div>
             <div className="text-center text-sm text-muted-foreground">
               Didn&apos;t receive a code?{" "}
-              <Button type="button" variant="link" className="p-0 h-auto text-primary" onClick={handleResendCode}>
-                Resend code
+              <Button 
+                type="button" 
+                variant="link" 
+                className="p-0 h-auto text-primary hover:text-primary/80 transition-colors"
+                onClick={handleResendCode}
+                disabled={isResending}
+              >
+                {isResending ? "Sending..." : "Resend code"}
               </Button>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Verifying..." : "Verify"}
+            <Button 
+              type="submit" 
+              className="w-full transition-all hover:scale-[1.02]" 
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner className="h-4 w-4" />
+                  <span>Verifying...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span>Verify</span>
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+              )}
             </Button>
-            <div className="text-center text-sm">
-              <Link href={action === "signup" ? "/auth/signup" : "/auth/login"} className="text-primary hover:underline">
+            <div className="text-center text-sm text-muted-foreground">
+              <Link 
+                href={action === "signup" ? "/auth/signup" : "/auth/login"} 
+                className="text-primary hover:text-primary/80 hover:underline transition-all"
+              >
                 Back to {action === "signup" ? "signup" : "login"}
               </Link>
             </div>

@@ -7,8 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { LoanApplyDialog } from "@/components/loan-apply-dialog"
+import { LoadingSpinner, TableLoader } from "@/components/loading-spinner"
 import api from "@/utils/api"
-import DashboardLayout from "@/components/dashboard-layout" // Import the DashboardLayout
+import DashboardLayout from "@/components/dashboard-layout"
 
 type Loan = {
   id: string
@@ -51,24 +52,50 @@ export default function LoansPage() {
   }, [router])
 
   const getStatusBadge = (status: string) => (
-    <Badge variant={
-      status === 'PENDING' ? 'outline' :
-      status === 'APPROVED' ? 'success' :
-      status === 'REJECTED' ? 'destructive' : 'default'
-    }>
+    <Badge 
+      variant={
+        status === 'PENDING' ? 'outline' :
+        status === 'APPROVED' ? 'success' :
+        status === 'REJECTED' ? 'destructive' : 'default'
+      }
+      className="transition-all hover:scale-105"
+    >
       {status.toLowerCase()}
     </Badge>
   )
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+            <div className="h-9 w-32 animate-pulse rounded bg-muted" />
+          </div>
+
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-muted to-transparent animate-shimmer" />
+            <CardHeader>
+              <div className="h-6 w-40 animate-pulse rounded bg-muted" />
+            </CardHeader>
+            <CardContent>
+              <TableLoader rows={5}/>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
-    <DashboardLayout> {/* Wrap the content with DashboardLayout */}
+    <DashboardLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Your Loan Applications</h1>
           <LoanApplyDialog onSuccess={fetchLoans} />
         </div>
 
-        <Card>
+        <Card className="transition-all hover:shadow-lg">
           <CardHeader>
             <CardTitle>Loan History</CardTitle>
           </CardHeader>
@@ -87,7 +114,7 @@ export default function LoansPage() {
               </TableHeader>
               <TableBody>
                 {loans.map(loan => (
-                  <TableRow key={loan.id}>
+                  <TableRow key={loan.id} className="transition-all hover:bg-muted/50">
                     <TableCell>${loan.amount.toFixed(2)}</TableCell>
                     <TableCell>{getStatusBadge(loan.status)}</TableCell>
                     <TableCell>{loan.interest}%</TableCell>
@@ -95,8 +122,11 @@ export default function LoansPage() {
                     <TableCell>{new Date(loan.dueDate).toLocaleDateString()}</TableCell>
                     <TableCell>{new Date(loan.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      <Button variant="outline" 
-                        onClick={() => router.push(`/dashboard/loans/${loan.id}`)}>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => router.push(`/dashboard/loans/${loan.id}`)}
+                        className="transition-all hover:scale-105"
+                      >
                         View Details
                       </Button>
                     </TableCell>
@@ -105,8 +135,8 @@ export default function LoansPage() {
               </TableBody>
             </Table>
             
-            {!loading && loans.length === 0 && (
-              <div className="py-6 text-center text-muted-foreground">
+            {loans.length === 0 && (
+              <div className="py-6 text-center text-muted-foreground transition-all hover:text-foreground">
                 No loan applications found
               </div>
             )}

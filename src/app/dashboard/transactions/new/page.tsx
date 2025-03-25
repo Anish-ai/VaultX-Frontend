@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import api from "@/utils/api"
 
 interface Account {
@@ -28,6 +29,7 @@ export default function NewTransactionPage() {
   })
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(false)
+  const [accountsLoading, setAccountsLoading] = useState(true)
   const [tokenValid, setTokenValid] = useState(false)
 
   // Verify token and fetch accounts on page load
@@ -69,6 +71,8 @@ export default function NewTransactionPage() {
         console.error("Error fetching accounts:", error)
         setTokenValid(false)
         router.push("/auth/login")
+      } finally {
+        setAccountsLoading(false)
       }
     }
 
@@ -133,11 +137,43 @@ export default function NewTransactionPage() {
     return null // Redirect will happen automatically
   }
 
+  if (accountsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <Card className="w-full max-w-md relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-muted to-transparent animate-shimmer" />
+          <CardHeader>
+            <div className="h-7 w-48 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-64 animate-pulse rounded bg-muted" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+              <div className="h-10 w-full animate-pulse rounded bg-muted" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+              <div className="h-10 w-full animate-pulse rounded bg-muted" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+              <div className="h-10 w-full animate-pulse rounded bg-muted" />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <div className="h-9 w-20 animate-pulse rounded bg-muted" />
+              <div className="h-9 w-24 animate-pulse rounded bg-muted" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="flex items-center justify-center min-h-screen p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md transition-all hover:shadow-lg">
         <CardHeader>
-          <CardTitle>New Transaction</CardTitle>
+          <CardTitle className="text-2xl">New Transaction</CardTitle>
           <CardDescription>Send money to another account</CardDescription>
         </CardHeader>
         <CardContent>
@@ -149,12 +185,16 @@ export default function NewTransactionPage() {
                 onValueChange={(value) => handleSelectChange("senderAccountNumber", value)}
                 required
               >
-                <SelectTrigger id="senderAccountNumber">
+                <SelectTrigger id="senderAccountNumber" className="transition-all hover:border-primary/80">
                   <SelectValue placeholder="Select your account" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="transition-all">
                   {accounts.map((account) => (
-                    <SelectItem key={account.id} value={account.accountNumber}>
+                    <SelectItem 
+                      key={account.id} 
+                      value={account.accountNumber}
+                      className="transition-all hover:bg-primary/10"
+                    >
                       {account.type} Account (●●●● {account.accountNumber.slice(-4)}) - ${account.balance.toFixed(2)}
                     </SelectItem>
                   ))}
@@ -170,6 +210,7 @@ export default function NewTransactionPage() {
                 value={formData.receiverAccountNumber}
                 onChange={handleChange}
                 required
+                className="transition-all focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div className="space-y-2">
@@ -183,7 +224,7 @@ export default function NewTransactionPage() {
                   name="amount"
                   type="number"
                   placeholder="0.00"
-                  className="pl-7"
+                  className="pl-7 transition-all focus:ring-2 focus:ring-primary/50"
                   value={formData.amount}
                   onChange={handleChange}
                   required
@@ -196,11 +237,21 @@ export default function NewTransactionPage() {
                 variant="outline"
                 onClick={() => router.push("/dashboard/transactions")}
                 disabled={loading}
+                className="transition-all hover:scale-105"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Processing..." : "Send Money"}
+              <Button 
+                type="submit" 
+                disabled={loading}
+                className="transition-all hover:scale-105"
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <LoadingSpinner className="h-4 w-4" />
+                    Processing...
+                  </span>
+                ) : "Send Money"}
               </Button>
             </CardFooter>
           </form>

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ArrowUpRight, ArrowDownRight, TrendingUp, PiggyBank, Briefcase, DollarSign } from "lucide-react";
 import DashboardLayout from "@/components/dashboard-layout";
+import { LoadingSpinner, GridLoader, TableLoader } from "@/components/loading-spinner";
 import api from "@/utils/api";
 import { useRouter } from "next/navigation";
 
@@ -206,7 +207,42 @@ export default function InvestmentsPage() {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8">Loading investments...</div>;
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+            <div className="h-8 w-32 animate-pulse rounded bg-muted" />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {Array(4).fill(0).map((_, i) => (
+              <Card key={i} className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-muted to-transparent animate-shimmer" />
+                <CardHeader className="space-y-2">
+                  <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+                  <div className="h-6 w-32 animate-pulse rounded bg-muted" />
+                </CardHeader>
+                <CardContent>
+                  <div className="h-8 w-40 animate-pulse rounded bg-muted" />
+                  <div className="mt-2 h-4 w-20 animate-pulse rounded bg-muted" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <Card>
+            <CardHeader>
+              <div className="h-6 w-40 animate-pulse rounded bg-muted" />
+              <div className="h-4 w-60 animate-pulse rounded bg-muted" />
+            </CardHeader>
+            <CardContent>
+              <TableLoader rows={5} />
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (
@@ -216,22 +252,22 @@ export default function InvestmentsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Investments</h1>
           <div className="flex items-center gap-2">
             <Link href="/dashboard/investments/new">
-              <Button size="sm">New Investment</Button>
+              <Button size="sm" className="transition-all hover:scale-105">New Investment</Button>
             </Link>
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+          <Card className="transition-all hover:shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Portfolio</CardTitle>
               <Briefcase className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold transition-all hover:scale-105">
                 ${assetAllocation.reduce((sum, asset) => sum + parseFloat(asset.value), 0).toFixed(2)}
               </div>
-              <div className={`flex items-center text-xs ${priceChanges.total.direction === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
+              <div className={`flex items-center text-xs ${priceChanges.total.direction === 'up' ? 'text-emerald-500' : 'text-rose-500'} transition-all`}>
                 {priceChanges.total.direction === 'up' ? (
                   <ArrowUpRight className="mr-1 h-3 w-3" />
                 ) : (
@@ -242,14 +278,14 @@ export default function InvestmentsPage() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="transition-all hover:shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Stocks</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${assetAllocation.find((a) => a.name === "Stocks")?.value}</div>
-              <div className={`flex items-center text-xs ${priceChanges.stocks.direction === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
+              <div className="text-2xl font-bold transition-all hover:scale-105">${assetAllocation.find((a) => a.name === "Stocks")?.value}</div>
+              <div className={`flex items-center text-xs ${priceChanges.stocks.direction === 'up' ? 'text-emerald-500' : 'text-rose-500'} transition-all`}>
                 {priceChanges.stocks.direction === 'up' ? (
                   <ArrowUpRight className="mr-1 h-3 w-3" />
                 ) : (
@@ -260,14 +296,14 @@ export default function InvestmentsPage() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="transition-all hover:shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Bonds</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${assetAllocation.find((a) => a.name === "Bonds")?.value}</div>
-              <div className={`flex items-center text-xs ${priceChanges.bonds.direction === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
+              <div className="text-2xl font-bold transition-all hover:scale-105">${assetAllocation.find((a) => a.name === "Bonds")?.value}</div>
+              <div className={`flex items-center text-xs ${priceChanges.bonds.direction === 'up' ? 'text-emerald-500' : 'text-rose-500'} transition-all`}>
                 {priceChanges.bonds.direction === 'up' ? (
                   <ArrowUpRight className="mr-1 h-3 w-3" />
                 ) : (
@@ -278,14 +314,14 @@ export default function InvestmentsPage() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="transition-all hover:shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Crypto</CardTitle>
               <PiggyBank className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${assetAllocation.find((a) => a.name === "Crypto")?.value}</div>
-              <div className={`flex items-center text-xs ${priceChanges.crypto.direction === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
+              <div className="text-2xl font-bold transition-all hover:scale-105">${assetAllocation.find((a) => a.name === "Crypto")?.value}</div>
+              <div className={`flex items-center text-xs ${priceChanges.crypto.direction === 'up' ? 'text-emerald-500' : 'text-rose-500'} transition-all`}>
                 {priceChanges.crypto.direction === 'up' ? (
                   <ArrowUpRight className="mr-1 h-3 w-3" />
                 ) : (
@@ -299,10 +335,10 @@ export default function InvestmentsPage() {
         </div>
 
         <Tabs defaultValue="portfolio" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
+          <TabsList className="transition-all">
+            <TabsTrigger value="portfolio" className="transition-all hover:bg-primary/10">Portfolio</TabsTrigger>
+            <TabsTrigger value="performance" className="transition-all hover:bg-primary/10">Performance</TabsTrigger>
+            <TabsTrigger value="opportunities" className="transition-all hover:bg-primary/10">Opportunities</TabsTrigger>
           </TabsList>
 
           <TabsContent value="portfolio" className="space-y-4">

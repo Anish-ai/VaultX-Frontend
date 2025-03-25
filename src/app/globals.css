@@ -1,36 +1,37 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import '../styles/animations.css';
 
 @layer base {
   :root {
-    --background: 140 10% 98%;
-    --foreground: 140 30% 15%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
-    --card: 140 10% 98%;
-    --card-foreground: 140 30% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
 
-    --popover: 140 10% 98%;
-    --popover-foreground: 140 30% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 140 70% 55%;
-    --primary-foreground: 140 10% 10%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 140 15% 90%;
-    --secondary-foreground: 140 30% 20%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 140 15% 90%;
-    --muted-foreground: 140 20% 45%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 140 15% 90%;
-    --accent-foreground: 140 30% 20%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 140 10% 98%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 140 20% 85%;
-    --input: 140 20% 85%;
-    --ring: 140 70% 55%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
 
     --radius: 0.5rem;
 
@@ -43,33 +44,33 @@
   }
 
   .dark {
-    --background: 140 20% 10%;
-    --foreground: 140 15% 90%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
 
-    --card: 140 20% 10%;
-    --card-foreground: 140 15% 90%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 140 20% 10%;
-    --popover-foreground: 140 15% 90%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 140 70% 55%;
-    --primary-foreground: 140 30% 10%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 140 15% 18%;
-    --secondary-foreground: 140 15% 90%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 140 15% 18%;
-    --muted-foreground: 140 15% 65%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 140 15% 18%;
-    --accent-foreground: 140 15% 90%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 140 15% 90%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 140 15% 22%;
-    --input: 140 15% 22%;
-    --ring: 140 70% 55%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
 
     --sidebar-background: 140 20% 14%;
     --sidebar-foreground: 140 15% 90%;
@@ -88,3 +89,85 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Add smooth scrolling to the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Add fade-in animation to page transitions */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Add loading state animations */
+.loading-state {
+  @apply animate-pulse bg-muted rounded;
+}
+
+/* Add hover effects to interactive elements */
+.interactive-hover {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.interactive-hover:hover {
+  @apply transform scale-105;
+}
+
+/* Add focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+}
+
+/* Add custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary/50 rounded-full transition-colors;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary;
+}
+
+/* Add skeleton loading animation */
+.skeleton {
+  @apply animate-pulse bg-muted rounded;
+}
+
+/* Add fade-in animation for lists */
+.list-fade-in > * {
+  @apply opacity-0;
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.list-fade-in > *:nth-child(1) { animation-delay: 0s; }
+.list-fade-in > *:nth-child(2) { animation-delay: 0.1s; }
+.list-fade-in > *:nth-child(3) { animation-delay: 0.2s; }
+.list-fade-in > *:nth-child(4) { animation-delay: 0.3s; }
+.list-fade-in > *:nth-child(5) { animation-delay: 0.4s; }

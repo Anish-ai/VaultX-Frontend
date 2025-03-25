@@ -32,6 +32,7 @@ import {
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import api from "@/utils/api"
 
 interface SecurityLog {
@@ -118,23 +119,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col">
-        <header className="sticky top-0 z-40 border-b bg-background">
+        <header className="sticky top-0 z-40 border-b bg-background animate-fade-in">
           <div className="container flex h-16 items-center justify-between px-4">
             <div className="flex items-center gap-2 md:gap-4">
-              <Button variant="outline" size="icon" className="md:hidden" disabled>
+              <Button variant="outline" size="icon" className="md:hidden animate-pulse" disabled>
                 <Menu className="h-5 w-5" />
               </Button>
-              <div className="flex items-center gap-2 font-bold text-xl">
+              <div className="flex items-center gap-2 font-bold text-xl animate-fade-in">
                 <Shield className="h-6 w-6" />
                 <span>VaultX</span>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <ThemeToggle />
-              <Button variant="outline" size="icon" disabled>
+              <Button variant="outline" size="icon" className="animate-pulse" disabled>
                 <Bell className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full" disabled>
+              <Button variant="ghost" size="icon" className="rounded-full animate-pulse" disabled>
                 <Avatar className="h-8 w-8">
                   <AvatarFallback>JD</AvatarFallback>
                 </Avatar>
@@ -145,15 +146,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex flex-1">
           <aside className="hidden w-64 border-r bg-muted/40 md:block">
             <nav className="flex flex-col gap-2 p-4">
-              {navigation.map((item) => (
+              {navigation.map((item, index) => (
                 <div
                   key={item.name}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground"
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground",
+                    "animate-fade-in",
+                  )}
+                  style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <item.icon className="h-5 w-5" />
                   {item.name}
-                  {item.name === "Notifications" && getUnreadCount() > 0 && (
-                    <Badge className="ml-auto bg-primary text-primary-foreground">{getUnreadCount()}</Badge>
+                  {item.name === "Notifications" && (
+                    <div className="h-5 w-5 animate-pulse rounded-full bg-muted" />
                   )}
                 </div>
               ))}
@@ -161,7 +166,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </aside>
           <main className="flex-1 overflow-auto p-4 md:p-6">
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <LoadingSpinner size="lg" text="Loading your dashboard..." />
             </div>
           </main>
         </div>
@@ -176,7 +181,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex items-center gap-2 md:gap-4">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="md:hidden">
+                <Button variant="outline" size="icon" className="md:hidden transition-all hover:bg-muted">
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">Toggle menu</span>
                 </Button>
@@ -205,7 +210,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </nav>
               </SheetContent>
             </Sheet>
-            <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl">
+            <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl transition-all hover:opacity-80">
               <Shield className="h-6 w-6" />
               <span>VaultX</span>
             </Link>
@@ -213,10 +218,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <Link href="/dashboard/notifications">
-              <Button variant="outline" size="icon" className="relative">
+              <Button variant="outline" size="icon" className="relative transition-all hover:bg-muted">
                 <Bell className="h-5 w-5" />
                 {getUnreadCount() > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground animate-bounce">
                     {getUnreadCount()}
                   </span>
                 )}
@@ -224,24 +229,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button variant="ghost" size="icon" className="rounded-full transition-all hover:bg-muted">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
                     <AvatarFallback>JD</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/dashboard/profile" className="w-full">
+                  <Link href="/dashboard/profile" className="w-full transition-colors hover:bg-muted">
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuItem onClick={handleLogout} className="transition-colors hover:bg-destructive/10">
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out
                 </DropdownMenuItem>
@@ -258,18 +263,26 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200",
-                  pathname === item.href ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                  pathname === item.href 
+                    ? "bg-primary text-primary-foreground transform scale-105" 
+                    : "hover:bg-muted hover:scale-102",
                 )}
               >
                 <item.icon className="h-5 w-5" />
                 <span>{item.name}</span>
-                {item.badge && <Badge className="ml-auto bg-primary text-primary-foreground">{item.badge}</Badge>}
+                {item.badge && (
+                  <Badge className="ml-auto bg-primary text-primary-foreground animate-pulse">
+                    {item.badge}
+                  </Badge>
+                )}
               </Link>
             ))}
           </nav>
         </aside>
-        <main className="flex-1 overflow-auto p-4 md:p-6 transition-all duration-300 ease-in-out">{children}</main>
+        <main className="flex-1 overflow-auto p-4 md:p-6 transition-all duration-300 ease-in-out">
+          {children}
+        </main>
       </div>
     </div>
   )
