@@ -32,6 +32,17 @@ import {
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Badge } from "@/components/ui/badge"
+import api from "@/utils/api"
+
+interface SecurityLog {
+  id: string
+  eventType: string
+  details: any
+  ipAddress: string
+  userAgent: string
+  createdAt: string
+  read?: boolean
+}
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -42,7 +53,40 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter() // Initialize useRouter
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [unreadNotifications, setUnreadNotifications] = useState(3)
+  const [logs, setLogs] = useState<SecurityLog[]>([])
+
+  // Function to get unread notifications count
+  const getUnreadCount = () => {
+    return logs.filter(log => !log.read).length
+  }
+
+  // Fetch security logs
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("No token found");
+        }
+
+        const response = await api.get("/security-logs/my-logs", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        setLogs(response.data
+          .filter((log: SecurityLog) => log.eventType !== 'NULL')
+          .map((log: SecurityLog) => ({ ...log, read: false }))
+        );
+      } catch (error) {
+        console.error("Error fetching security logs:", error);
+        setLogs([]);
+      }
+    };
+
+    fetchLogs();
+  }, []);
 
   // Simulate loading state
   useEffect(() => {
@@ -64,10 +108,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Accounts", href: "/dashboard/accounts", icon: CreditCard },
-    {name: "Loans", href: "/dashboard/loans", icon: DollarSign},
+    { name: "Loans", href: "/dashboard/loans", icon: DollarSign },
     { name: "Transactions", href: "/dashboard/transactions", icon: BarChart3 },
     { name: "Investments", href: "/dashboard/investments", icon: PiggyBank },
-    { name: "Notifications", href: "/dashboard/notifications", icon: Bell, badge: unreadNotifications },
+    { name: "Notifications", href: "/dashboard/notifications", icon: Bell, badge: getUnreadCount() },
     { name: "Profile", href: "/dashboard/profile", icon: User },
   ]
 
@@ -108,6 +152,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 >
                   <item.icon className="h-5 w-5" />
                   {item.name}
+                  {item.name === "Notifications" && getUnreadCount() > 0 && (
+                    <Badge className="ml-auto bg-primary text-primary-foreground">{getUnreadCount()}</Badge>
+                  )}
                 </div>
               ))}
             </nav>
@@ -168,9 +215,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Link href="/dashboard/notifications">
               <Button variant="outline" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                {unreadNotifications > 0 && (
+                {getUnreadCount() > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                    {unreadNotifications}
+                    {getUnreadCount()}
                   </span>
                 )}
               </Button>

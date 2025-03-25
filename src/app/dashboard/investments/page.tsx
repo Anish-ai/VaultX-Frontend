@@ -32,11 +32,77 @@ interface AssetAllocation {
   progressColor: string;
 }
 
+// Add new interfaces for price tracking
+interface PriceChange {
+  value: number;
+  percentage: number;
+  direction: 'up' | 'down';
+}
+
+interface AssetPriceChanges {
+  [key: string]: PriceChange;
+}
+
 export default function InvestmentsPage() {
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [assetAllocation, setAssetAllocation] = useState<AssetAllocation[]>([]);
+  // Add new state for price changes
+  const [priceChanges, setPriceChanges] = useState<AssetPriceChanges>({
+    total: { value: 0, percentage: 0, direction: 'up' },
+    stocks: { value: 0, percentage: 0, direction: 'up' },
+    bonds: { value: 0, percentage: 0, direction: 'up' },
+    crypto: { value: 0, percentage: 0, direction: 'up' },
+  });
   const router = useRouter();
+
+  // Add function to generate random price changes
+  const generateRandomPriceChange = (currentValue: number): PriceChange => {
+    const maxChangePercentage = 0.5; // Maximum 0.5% change per update
+    const randomPercentage = (Math.random() * maxChangePercentage * 2) - maxChangePercentage;
+    const changeValue = currentValue * (randomPercentage / 100);
+    const direction: 'up' | 'down' = randomPercentage >= 0 ? 'up' : 'down';
+    return {
+      value: changeValue,
+      percentage: randomPercentage,
+      direction
+    };
+  };
+
+  // Add useEffect for price updates
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    if (!loading && assetAllocation.length > 0) {
+      intervalId = setInterval(() => {
+        const totalValue = assetAllocation.reduce((sum, asset) => sum + parseFloat(asset.value), 0);
+        const newPriceChanges: AssetPriceChanges = {
+          total: generateRandomPriceChange(totalValue),
+          stocks: generateRandomPriceChange(parseFloat(assetAllocation.find(a => a.name === "Stocks")?.value || "0")),
+          bonds: generateRandomPriceChange(parseFloat(assetAllocation.find(a => a.name === "Bonds")?.value || "0")),
+          crypto: generateRandomPriceChange(parseFloat(assetAllocation.find(a => a.name === "Crypto")?.value || "0")),
+        };
+
+        setPriceChanges(newPriceChanges);
+        
+        // Update asset allocation with new values
+        setAssetAllocation(prev => prev.map(asset => ({
+          ...asset,
+          value: (parseFloat(asset.value) + (
+            asset.name === "Stocks" ? newPriceChanges.stocks.value :
+            asset.name === "Bonds" ? newPriceChanges.bonds.value :
+            newPriceChanges.crypto.value
+          )).toFixed(2)
+        })));
+      }, 1000);
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [loading, assetAllocation.length]);
 
   useEffect(() => {
     const checkTokenAndFetchData = async () => {
@@ -165,9 +231,14 @@ export default function InvestmentsPage() {
               <div className="text-2xl font-bold">
                 ${assetAllocation.reduce((sum, asset) => sum + parseFloat(asset.value), 0).toFixed(2)}
               </div>
-              <div className="flex items-center text-xs text-emerald-500">
-                <ArrowUpRight className="mr-1 h-3 w-3" />
-                +12.3% ($1,345.23)
+              <div className={`flex items-center text-xs ${priceChanges.total.direction === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                {priceChanges.total.direction === 'up' ? (
+                  <ArrowUpRight className="mr-1 h-3 w-3" />
+                ) : (
+                  <ArrowDownRight className="mr-1 h-3 w-3" />
+                )}
+                {priceChanges.total.direction === 'up' ? '+' : '-'}
+                {Math.abs(priceChanges.total.percentage).toFixed(2)}% (${Math.abs(priceChanges.total.value).toFixed(2)})
               </div>
             </CardContent>
           </Card>
@@ -178,9 +249,14 @@ export default function InvestmentsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">${assetAllocation.find((a) => a.name === "Stocks")?.value}</div>
-              <div className="flex items-center text-xs text-emerald-500">
-                <ArrowUpRight className="mr-1 h-3 w-3" />
-                +15.7% ($1,178.45)
+              <div className={`flex items-center text-xs ${priceChanges.stocks.direction === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                {priceChanges.stocks.direction === 'up' ? (
+                  <ArrowUpRight className="mr-1 h-3 w-3" />
+                ) : (
+                  <ArrowDownRight className="mr-1 h-3 w-3" />
+                )}
+                {priceChanges.stocks.direction === 'up' ? '+' : '-'}
+                {Math.abs(priceChanges.stocks.percentage).toFixed(2)}% (${Math.abs(priceChanges.stocks.value).toFixed(2)})
               </div>
             </CardContent>
           </Card>
@@ -191,9 +267,14 @@ export default function InvestmentsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">${assetAllocation.find((a) => a.name === "Bonds")?.value}</div>
-              <div className="flex items-center text-xs text-rose-500">
-                <ArrowDownRight className="mr-1 h-3 w-3" />
-                -1.2% ($30.00)
+              <div className={`flex items-center text-xs ${priceChanges.bonds.direction === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                {priceChanges.bonds.direction === 'up' ? (
+                  <ArrowUpRight className="mr-1 h-3 w-3" />
+                ) : (
+                  <ArrowDownRight className="mr-1 h-3 w-3" />
+                )}
+                {priceChanges.bonds.direction === 'up' ? '+' : '-'}
+                {Math.abs(priceChanges.bonds.percentage).toFixed(2)}% (${Math.abs(priceChanges.bonds.value).toFixed(2)})
               </div>
             </CardContent>
           </Card>
@@ -204,9 +285,14 @@ export default function InvestmentsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">${assetAllocation.find((a) => a.name === "Crypto")?.value}</div>
-              <div className="flex items-center text-xs text-emerald-500">
-                <ArrowUpRight className="mr-1 h-3 w-3" />
-                +24.5% ($218.67)
+              <div className={`flex items-center text-xs ${priceChanges.crypto.direction === 'up' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                {priceChanges.crypto.direction === 'up' ? (
+                  <ArrowUpRight className="mr-1 h-3 w-3" />
+                ) : (
+                  <ArrowDownRight className="mr-1 h-3 w-3" />
+                )}
+                {priceChanges.crypto.direction === 'up' ? '+' : '-'}
+                {Math.abs(priceChanges.crypto.percentage).toFixed(2)}% (${Math.abs(priceChanges.crypto.value).toFixed(2)})
               </div>
             </CardContent>
           </Card>
