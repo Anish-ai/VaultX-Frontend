@@ -110,17 +110,17 @@ export default function NotificationsPage() {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={markAllAsRead}
                 className="transition-all hover:scale-105"
               >
                 Mark all as read
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={clearAllNotifications}
                 className="transition-all hover:scale-105"
               >
@@ -131,8 +131,8 @@ export default function NotificationsPage() {
 
           <Tabs defaultValue="all" className="space-y-4">
             <TabsList className="transition-all">
-              <TabsTrigger 
-                value="all" 
+              <TabsTrigger
+                value="all"
                 className="relative transition-all hover:bg-primary/10"
               >
                 All
@@ -142,8 +142,8 @@ export default function NotificationsPage() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger 
-                value="transactions" 
+              <TabsTrigger
+                value="transactions"
                 className="relative transition-all hover:bg-primary/10"
               >
                 Transactions
@@ -153,8 +153,8 @@ export default function NotificationsPage() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger 
-                value="security" 
+              <TabsTrigger
+                value="security"
                 className="relative transition-all hover:bg-primary/10"
               >
                 Security
@@ -164,8 +164,8 @@ export default function NotificationsPage() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger 
-                value="account" 
+              <TabsTrigger
+                value="account"
                 className="relative transition-all hover:bg-primary/10"
               >
                 Account
@@ -182,6 +182,7 @@ export default function NotificationsPage() {
                 <LoadingState />
               ) : logs.length > 0 ? (
                 logs.map((log) => (
+                  // Update the notification prop in the NotificationCard component within the logs.map function
                   <NotificationCard
                     key={log.id}
                     notification={{
@@ -190,7 +191,8 @@ export default function NotificationsPage() {
                       priority: getPriority(log.eventType),
                       title: log.eventType.replace(/_/g, " ").toLowerCase(),
                       message: getEventDescription(log),
-                      time: formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })
+                      time: formatDistanceToNow(new Date(log.createdAt), { addSuffix: true }),
+                      read: log.read ?? false // Explicitly set read as boolean
                     }}
                     onMarkAsRead={markAsRead}
                     onDelete={deleteNotification}
@@ -209,6 +211,7 @@ export default function NotificationsPage() {
                   logs
                     .filter((log) => getLogType(log.eventType) === type)
                     .map((log) => (
+                      // Update the notification prop in the NotificationCard component within the logs.map function
                       <NotificationCard
                         key={log.id}
                         notification={{
@@ -217,7 +220,8 @@ export default function NotificationsPage() {
                           priority: getPriority(log.eventType),
                           title: log.eventType.replace(/_/g, " ").toLowerCase(),
                           message: getEventDescription(log),
-                          time: formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })
+                          time: formatDistanceToNow(new Date(log.createdAt), { addSuffix: true }),
+                          read: log.read ?? false // Explicitly set read as boolean
                         }}
                         onMarkAsRead={markAsRead}
                         onDelete={deleteNotification}
@@ -269,13 +273,12 @@ function NotificationCard({ notification, onMarkAsRead, onDelete }: Notification
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div className="flex items-start gap-2">
           <div
-            className={`flex h-9 w-9 items-center justify-center rounded-full transition-all hover:scale-110 ${
-              type === "security"
-                ? "bg-destructive/10 text-destructive"
-                : type === "transaction"
-                  ? "bg-primary/10 text-primary"
-                  : "bg-secondary/50 text-secondary-foreground"
-            }`}
+            className={`flex h-9 w-9 items-center justify-center rounded-full transition-all hover:scale-110 ${type === "security"
+              ? "bg-destructive/10 text-destructive"
+              : type === "transaction"
+                ? "bg-primary/10 text-primary"
+                : "bg-secondary/50 text-secondary-foreground"
+              }`}
           >
             {getIcon()}
           </div>
@@ -298,9 +301,9 @@ function NotificationCard({ notification, onMarkAsRead, onDelete }: Notification
       </CardContent>
       <CardFooter className="flex justify-end gap-2 pt-0">
         {!read && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => onMarkAsRead(id)}
             className="transition-all hover:scale-105"
           >
@@ -308,9 +311,9 @@ function NotificationCard({ notification, onMarkAsRead, onDelete }: Notification
             Mark as read
           </Button>
         )}
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => onDelete(id)}
           className="transition-all hover:scale-105"
         >
@@ -368,14 +371,14 @@ function getEventDescription(log: SecurityLog): string {
       return "Password reset requested"
     case "PASSWORD_RESET_COMPLETED":
       return "Password successfully reset"
-    
+
     // Transaction & Asset Events
     case "ASSET_TRANSFER":
     case "TRANSACTION_COMPLETED":
       return `Transaction of ${log.details?.amount} ${log.details?.currency || 'USD'} ${log.details?.type === 'SENT' ? 'sent to' : 'received from'} ${log.details?.otherParty}`
     case "TRANSACTION_FAILED":
       return `Transaction failed: ${log.details?.reason || 'Unknown error'}`
-    
+
     // Loan Events
     case "LOAN_APPLICATION":
       return `Loan application submitted for ${log.details?.amount} ${log.details?.currency || 'USD'}`
@@ -385,13 +388,13 @@ function getEventDescription(log: SecurityLog): string {
       return `Loan application rejected: ${log.details?.reason || 'No reason provided'}`
     case "LOAN_REPAID":
       return `Loan fully repaid`
-    
+
     // Investment Events
     case "INVESTMENT_CREATED":
       return `New investment of ${log.details?.amount} ${log.details?.currency || 'USD'} in ${log.details?.type}`
     case "INVESTMENT_CLOSED":
       return `Investment closed with ${log.details?.returnAmount} ${log.details?.currency || 'USD'} return`
-    
+
     // User Events
     case "PROFILE_UPDATE":
       return "Profile information updated"
@@ -401,11 +404,11 @@ function getEventDescription(log: SecurityLog): string {
       return "Two-factor authentication enabled"
     case "MFA_DISABLED":
       return "Two-factor authentication disabled"
-    
+
     // Security Events
     case "SUSPICIOUS_ACTIVITY":
       return `Suspicious activity detected from ${log.ipAddress}`
-    
+
     default:
       return `${log.eventType.replace(/_/g, " ").toLowerCase()}`
   }
